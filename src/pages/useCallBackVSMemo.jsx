@@ -342,7 +342,7 @@ function useCallBackVSMemo() {
           </button>
         </div>
       </div>
-      <h2 className="text-2xl my-3 font-bold">
+      <h2 className="mt-5">
         {" "}
         By implementing the "useMemo" hook, we were able to improve the
         performance of the "Fast Number" button by allowing it to render
