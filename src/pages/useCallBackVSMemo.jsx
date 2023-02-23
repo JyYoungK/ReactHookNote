@@ -1,12 +1,12 @@
 import React, { useState, useCallback, useMemo } from "react";
 import List from "./list";
 import List2 from "./list2";
-import List3 from "./list3";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { nord } from "react-syntax-highlighter/dist/esm/styles/hljs";
 
 function useCallBackVSMemo() {
   const [firstButtonClicked, setFirstButtonClicked] = useState(true);
+  const [memoButtonClicked, setMemoButtonClicked] = useState(false);
 
   const [count, setCount] = useState(0);
   const [dontCount, setDontCount] = useState(1000);
@@ -22,12 +22,29 @@ function useCallBackVSMemo() {
     return [useCallBackCount, useCallBackCount + 1, useCallBackCount + 2];
   }, [useCallBackCount]);
 
-  const [useMemoCount, useMemoSetCount] = useState(0);
-  const [useMemoDontCount, useMemoSetDontCount] = useState(1000);
+  const [number, setNumber] = useState(0);
+  const [useMemoNumber, setUseMemoNumber] = useState(0);
+  const [increaseNumber, setIncreaseNumber] = useState(0);
+  const [useMemoIncreaseNumber, setUseMemoIncreaseNumber] = useState(0);
 
-  const useMemoGetNumbers = useMemo(() => {
-    return [useMemoCount, useMemoCount + 1, useMemoCount + 2];
-  }, [useMemoCount]);
+  const printSlow = slowFunction(number);
+
+  const useMemoPrintSlow = useMemo(() => {
+    return memoSlowFunction(useMemoNumber);
+  }, [useMemoNumber]);
+
+  function slowFunction(num) {
+    if (!memoButtonClicked) {
+      for (let i = 0; i <= 999999999; i++) {}
+    }
+    return num;
+  }
+
+  function memoSlowFunction(num) {
+    for (let i = 0; i <= 999999999; i++) {}
+
+    return num;
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -183,75 +200,181 @@ function useCallBackVSMemo() {
         the entire function.
       </h2>
 
+      <h2 className="mt-5">
+        Consider the following code snippet where the objective for both button
+        is to increment a number.
+      </h2>
       <SyntaxHighlighter language="javascript" style={nord}>
-        {`    const getNumbers = useMemo(() => {
-        return [count, count + 1, count + 2];
-    }, [count]);
-    ;
+        {`  const [number, setNumber] = useState(0);
+  const [increaseNumber, setIncreaseNumber] = useState(0);
 
-  
+  const printSlow = slowFunction(number);
+
+  function slowFunction(num) {
+    for (let i = 0; i <= 999999999; i++) {}
+    return num;
+  }
+
+
     return (
         <div>
-            <button onClick={() => setDontCount(dontCount - 1)}>
-                Should not print
+            <div className="flex flex-row space-x-4">
+                <div>Slow Number: {printSlow}</div>
+                <div>Fast Number: {printFast}</div>
+            </div>
+            <button onClick={() => setNumber(number + 1)}>
+            Slow Increase
             </button>
-            <button onClick={() => setCount(count + 1)}>
-                Print
+            <button onClick={() => setPrintFast(printFast + 1)}>
+            Fast Increase 
             </button>
-         <List getNumbers={getNumbers} />
         </div> )`}
       </SyntaxHighlighter>
 
-      <h2 className="mt-5"> Try pressing both buttons now!</h2>
+      <h2 className="mt-5"> Try pressing both buttons</h2>
+
       <div className="flex flex-col  mb-8 mt-5">
         <div className="flex flex-row space-x-4">
-          <div>Print Number: {useMemoCount}</div>
-          <div>Should Not Print Number: {useMemoDontCount}</div>
+          <div>Slow Number: {printSlow}</div>
+          <div>Fast Number: {increaseNumber}</div>
         </div>
         <div className="flex flex-row space-x-4 mt-3">
           <button
             className="py-2 px-4 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
             onClick={() => {
-              useMemoSetCount(useMemoCount + 1);
-              setFirstButtonClicked(false);
+              setNumber(number + 1);
+              setMemoButtonClicked(false);
             }}
           >
-            Print
+            Slow Increase
           </button>
           <button
-            className="py-2 px-4 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+            className="py-2 px-4 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
             onClick={() => {
-              useMemoSetDontCount(useMemoDontCount - 1);
-              setFirstButtonClicked(false);
+              setIncreaseNumber(increaseNumber + 1);
+              setMemoButtonClicked(false);
             }}
           >
-            Should not print
+            Fast Increase
           </button>
         </div>
       </div>
 
-      <List3 useMemoGetNumbers={useMemoGetNumbers} />
+      <h2 className="mt-5">
+        The code contains a function called "printSlow" which intentionally
+        takes a long time to execute and return. When the "Slow Number" button
+        calls this function, it causes a delay in updating the number displayed
+        on the button. However, this delay also affects the "Fast Number"
+        button, which should not be impacted. This behavior is similar to the
+        "useCallback" example discussed earlier, where re-rendering the
+        component causes delays. If you have a slow-performing piece of code
+        that doesn't change frequently, it can have a significant impact on
+        performance and cause delays in other components. This issue is
+        especially pronounced when working with large API data fetches. To
+        resolve this issue and make the "Fast Increase" button update
+        immediately, we need to implement a solution that separates the slow and
+        fast buttons' logic, which is to use useMemo.
+      </h2>
+      <h2 className="mt-5">
+        In this scenario, it is more appropriate to use "useMemo" instead of
+        "useCallback" since we are anticipating a value as output rather than a
+        function. So in our example, this slowFunction takes an input of number
+        and it's always going to give us the same output every time we give it
+        the same input. So we can cache that input value number and output it
+        gives us. That way if the number doesn't change we don't have to
+        re-render our slowFunction again.
+      </h2>
+
+      <SyntaxHighlighter language="javascript" style={nord}>
+        {`  const [number, setNumber] = useState(0);
+  const [increaseNumber, setIncreaseNumber] = useState(0);
+
+  const printSlow = useMemo(() => {
+    return slowFunction(number);
+  }, [number]);
+
+  function slowFunction(num) {
+    for (let i = 0; i <= 999999999; i++) {}
+    return num;
+  }
+
+
+    return (
+        <div>
+            <div className="flex flex-row space-x-4">
+                <div>Slow Number: {printSlow}</div>
+                <div>Fast Number: {printFast}</div>
+            </div>
+            <button onClick={() => setNumber(number + 1)}>
+            Slow Increase
+            </button>
+            <button onClick={() => setPrintFast(printFast + 1)}>
+            Fast Increase 
+            </button>
+        </div> )`}
+      </SyntaxHighlighter>
+
+      <h2 className="mt-5"> Try pressing both buttons now!</h2>
+
+      <div className="flex flex-col  mb-8 mt-5">
+        <div className="flex flex-row space-x-4">
+          <div>Slow Number: {useMemoPrintSlow}</div>
+          <div>Fast Number: {useMemoIncreaseNumber}</div>
+        </div>
+        <div className="flex flex-row space-x-4 mt-3">
+          <button
+            className="py-2 px-4 bg-green-500 text-white rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            onClick={() => {
+              setUseMemoNumber(useMemoNumber + 1);
+              setMemoButtonClicked(true);
+            }}
+          >
+            Slow Increase
+          </button>
+          <button
+            className="py-2 px-4 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            onClick={() => {
+              setUseMemoIncreaseNumber(useMemoIncreaseNumber + 1);
+              setMemoButtonClicked(true);
+            }}
+          >
+            Fast Increase
+          </button>
+        </div>
+      </div>
+      <h2 className="text-2xl my-3 font-bold">
+        {" "}
+        By implementing the "useMemo" hook, we were able to improve the
+        performance of the "Fast Number" button by allowing it to render
+        instantly, without waiting for the slower "Slow Number" button to finish
+        rendering. This is because, when we click the "Fast Increase" button,
+        the component is re-rendered but the "useMemo" hook recognizes that the
+        number has not changed since the last time it was calculated, so it
+        skips calling the slower function. This optimization saves us the time
+        and resources needed to recalculate the number using the slower
+        function.{" "}
+      </h2>
 
       <h2 className="text-2xl my-3 font-bold"> Conclusion</h2>
       <div>
         While useMemo and useCallback have some similarities in how they can be
         used, they serve different purposes in React.{" "}
-        <span className="underline font-bold">useMemo</span> is used for
-        memoization, which means it is used to cache the result of a computation
-        so that the computation is not repeated unnecessarily. It takes two
-        arguments: a function that returns a value and an array of dependencies.
-        If any of the dependencies change, the function is re-run, and if they
-        don't change, the cached result is returned. The main goal of useMemo is
-        to optimize the performance of your application by avoiding unnecessary
-        re-renders. On the other hand,{" "}
+      </div>
+      <div>
         <span className="underline font-bold">useCallBack</span> is used to
         memoize functions, specifically event handlers that are passed down as
         props to child components. It takes two arguments: a function and an
         array of dependencies. If any of the dependencies change, the function
         is re-created, and if they don't change, the same function reference is
-        returned. The main goal of useCallback is to optimize the performance of
-        your application by preventing unnecessary re-renders caused by passing
-        down new function references to child components.
+        returned.
+      </div>
+      <div>
+        <span className="underline font-bold">useMemo</span> is used for
+        memoization, which means it is used to cache the result of a computation
+        so that the computation is not repeated unnecessarily. It takes two
+        arguments: a function that returns a value and an array of dependencies.
+        If any of the dependencies change, the function is re-run, and if they
+        don't change, the cached result is returned.
       </div>
     </div>
   );
