@@ -120,7 +120,7 @@ function useStateVSRef() {
           This is setValue used by useState: {useRefValue}
         </div>
         <div className="text-xl text-green-600 mb-2">
-          This is the previous value using useState: {prevUseRefValue.current}
+          This is the previous value using useRef: {prevUseRefValue.current}
         </div>
 
         <div className="text-gray-700">
